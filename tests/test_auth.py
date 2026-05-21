@@ -26,10 +26,14 @@ def test_wrong_api_key_returns_401():
 
 
 def test_correct_api_key_does_not_return_401():
-    client = make_client(api_key="test-key")
-    # Will hit the DB layer and fail with 500, but NOT 401
-    with patch("database.get_ordenes", side_effect=Exception("db error")):
-        response = client.get(
-            "/ordenes-reparacion", headers={"X-API-Key": "test-key"}
-        )
+    cfg = configparser.ConfigParser()
+    cfg["api"] = {"api_key": "test-key"}
+    cfg["database"] = {"dsn": "FAKE_DSN"}
+    with patch("main.config", cfg):
+        from main import app
+        client = TestClient(app)
+        with patch("database.get_ordenes", side_effect=Exception("db error")):
+            response = client.get(
+                "/ordenes-reparacion", headers={"X-API-Key": "test-key"}
+            )
     assert response.status_code != 401
