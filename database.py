@@ -1,9 +1,10 @@
 import configparser
 import math
+from pathlib import Path
 import pyodbc
 
 _config = configparser.ConfigParser()
-_config.read("config.ini")
+_config.read(Path(__file__).parent / "config.ini")
 
 BASE_QUERY = """
 select

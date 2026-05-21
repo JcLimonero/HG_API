@@ -1,9 +1,10 @@
 import configparser
 import math
+from pathlib import Path
 from fastapi import FastAPI, Header, HTTPException, Depends, Query
 
 config = configparser.ConfigParser()
-config.read("config.ini")
+config.read(Path(__file__).parent / "config.ini")
 
 app = FastAPI()
 
