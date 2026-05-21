@@ -9,20 +9,23 @@ _config.read(Path(__file__).parent / "config.ini")
 BASE_QUERY = """
 select
   o."Nr OS" as 'Orden de Reparacion',
-  a."Chassi" as 'Numero de Chasis',
-  v."Nm Modelo" as 'Modelo',
-  v."Versao" as 'Version',
-  a."Quilometragem" as 'Kilometraje',
-  o."Dt Fechamento" as 'Fecha Ultima Visita',
-  a."Cliente Veiculo" as 'ND',
-  e."Razao Social" as 'Nombre del Cliente',
-  LTRIM(CONCAT(e."Nr DD1",e."Tel1")) as 'Telefono',
-  e."email" as 'Correo Flujo Informacion',
-  v."Dt Venda",
-  ap."Comentario" as 'Operacion'
+    a."Chassi" as 'Numero de Chasis',
+    v."Nm Modelo" as 'Modelo',
+    v."Versao" as 'Version',
+    a."Quilometragem" as 'Kilometraje',
+    o."Dt Fechamento" as 'Fecha Ultima Visita',
+    a."Cliente Veiculo" as 'ND',
+    e."Razao Social" as 'Nombre del Cliente',
+    LTRIM(
+        COALESCE(CAST(e."Nr DDD1" AS VARCHAR(20)), '') +
+        COALESCE(CAST(e."Tel1" AS VARCHAR(20)), '')
+    ) AS "Telefono",
+    e."email" as 'Correo Flujo Informacion',
+    v."Dt Venda",
+    ap."Comentario" as 'Operacion'
 From "OS" as o
 inner join "Atendimento" as a on o."Nr Atendimento"=a."Nr Atendimento"
-inner join "Veiculos" as v on 'Numero de Chasis'=v."Chassi"
+inner join "Veiculos" as v on a."Chassi"=v."Chassi"
 inner join "Entidades" as e on a."Cliente Veiculo"=e."Cod Entidade"
 left join "Atendimento Pacotes" as ap on o."Nr Atendimento"=ap."Nr Atendimento"
 Where o.Situacao ='R'
