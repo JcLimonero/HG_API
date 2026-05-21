@@ -38,6 +38,7 @@ PAGINATED_QUERY = (
 def get_ordenes(page: int, page_size: int) -> dict:
     dsn = _config.get("database", "dsn")
     conn = pyodbc.connect(f"DSN={dsn}")
+    cursor = None
     try:
         cursor = conn.cursor()
 
@@ -50,6 +51,8 @@ def get_ordenes(page: int, page_size: int) -> dict:
         columns = [col[0] for col in cursor.description]
         rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
     finally:
+        if cursor:
+            cursor.close()
         conn.close()
 
     return {
