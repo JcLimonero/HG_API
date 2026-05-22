@@ -41,8 +41,8 @@ left join "Atendimento Pacotes" as ap on o."Nr Atendimento"=ap."Nr Atendimento"
 Where o.Situacao ='R'
 """
 
-PAGINATED_QUERY = """
-select SKIP {offset} TOP {page_size} o."Nr OS" as 'Orden de Reparacion',
+TOP_QUERY = """
+select TOP {fetch_count} o."Nr OS" as 'Orden de Reparacion',
   a."Chassi" as 'Numero de Chasis',
   v."Nm Modelo" as 'Modelo',
   v."Versao" as 'Version',
@@ -77,10 +77,13 @@ def get_ordenes(page: int, page_size: int) -> dict:
         total = cursor.fetchone()[0]
 
         offset = (page - 1) * page_size
-        sql = PAGINATED_QUERY.format(offset=offset, page_size=page_size)
+        # Pervasive no soporta SKIP — traemos offset+page_size filas y descartamos las primeras
+        fetch_count = offset + page_size
+        sql = TOP_QUERY.format(fetch_count=fetch_count)
         cursor.execute(sql)
         columns = [col[0] for col in cursor.description]
-        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        all_rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        rows = all_rows[offset:]
     finally:
         if cursor:
             cursor.close()
