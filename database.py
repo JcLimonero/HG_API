@@ -42,7 +42,7 @@ Where o.Situacao ='R'
 """
 
 PAGINATED_QUERY = """
-select TOP {page_size} SKIP {offset} o."Nr OS" as 'Orden de Reparacion',
+select SKIP {offset} TOP {page_size} o."Nr OS" as 'Orden de Reparacion',
   a."Chassi" as 'Numero de Chasis',
   v."Nm Modelo" as 'Modelo',
   v."Versao" as 'Version',
