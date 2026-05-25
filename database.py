@@ -42,7 +42,7 @@ Where o.Situacao ='R'
 """
 
 BASE_TOP_QUERY = """
-select TOP {{fetch_count}} o."Nr OS" as 'Orden de Reparacion',
+select TOP {fetch_count} o."Nr OS" as 'Orden de Reparacion',
   a."Chassi" as 'Numero de Chasis',
   v."Nm Modelo" as 'Modelo',
   v."Versao" as 'Version',
