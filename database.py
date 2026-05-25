@@ -31,7 +31,7 @@ left join "Atendimento Pacotes" as ap on o."Nr Atendimento"=ap."Nr Atendimento"
 Where o.Situacao ='R'
 """
 
-COUNT_QUERY = """
+BASE_COUNT_QUERY = """
 SELECT COUNT(*)
 From "OS" as o
 inner join "Atendimento" as a on o."Nr Atendimento"=a."Nr Atendimento"
@@ -41,8 +41,8 @@ left join "Atendimento Pacotes" as ap on o."Nr Atendimento"=ap."Nr Atendimento"
 Where o.Situacao ='R'
 """
 
-TOP_QUERY = """
-select TOP {fetch_count} o."Nr OS" as 'Orden de Reparacion',
+BASE_TOP_QUERY = """
+select TOP {{fetch_count}} o."Nr OS" as 'Orden de Reparacion',
   a."Chassi" as 'Numero de Chasis',
   v."Nm Modelo" as 'Modelo',
   v."Versao" as 'Version',
@@ -66,24 +66,37 @@ Where o.Situacao ='R'
 """
 
 
-def get_ordenes(page: int, page_size: int) -> dict:
+def _build_queries(fecha_desde: str | None, fecha_hasta: str | None) -> tuple[str, str]:
+    filters = ""
+    if fecha_desde:
+        filters += f" AND o.\"Dt Fechamento\" >= '{fecha_desde}'"
+    if fecha_hasta:
+        filters += f" AND o.\"Dt Fechamento\" <= '{fecha_hasta}'"
+    count_query = BASE_COUNT_QUERY.rstrip() + filters + "\n"
+    top_query = BASE_TOP_QUERY.rstrip() + filters + "\n"
+    return count_query, top_query
+
+
+def get_ordenes(page: int, page_size: int, fecha_desde: str | None = None, fecha_hasta: str | None = None) -> dict:
     dsn = _config.get("database", "dsn")
     conn = pyodbc.connect(f"DSN={dsn}")
     cursor = None
     try:
         cursor = conn.cursor()
 
-        cursor.execute(COUNT_QUERY)
+        count_query, top_query = _build_queries(fecha_desde, fecha_hasta)
+
+        cursor.execute(count_query)
         total = cursor.fetchone()[0]
 
         offset = (page - 1) * page_size
-        # Pervasive no soporta SKIP — traemos offset+page_size filas y descartamos las primeras
-        fetch_count = offset + page_size
-        sql = TOP_QUERY.format(fetch_count=fetch_count)
-        cursor.execute(sql)
+        # Pervasive no soporta SKIP/OFFSET — usamos fetchmany para avanzar el cursor
+        # sin cargar todas las filas en memoria
+        cursor.execute(top_query.format(fetch_count=total))
         columns = [col[0] for col in cursor.description]
-        all_rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
-        rows = all_rows[offset:]
+        if offset > 0:
+            cursor.fetchmany(offset)  # avanza el cursor, descarta filas anteriores
+        rows = [dict(zip(columns, row)) for row in cursor.fetchmany(page_size)]
     finally:
         if cursor:
             cursor.close()
